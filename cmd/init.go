@@ -1,10 +1,11 @@
 package cmd
 
 import (
-	"fmt"
+	"encoding/json"
 	"log"
 	"os"
 
+	"github.com/loqwai/double-blind/study"
 	"github.com/spf13/cobra"
 )
 
@@ -16,10 +17,16 @@ var initCommand = &cobra.Command{
 }
 
 func init() {
+	initCommand.Flags().StringP("name", "n", "Study", "Name of the study")
 	rootCmd.AddCommand(initCommand)
 }
 
 func runInit(cmd *cobra.Command, args []string) {
+	name, err := cmd.Flags().GetString("name")
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
 	filename := getFilename(args)
 	file, err := os.Create(filename)
 	if os.IsExist(err) {
@@ -28,7 +35,17 @@ func runInit(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
-	fmt.Println("file", file)
+
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+	encoder.Encode(&study.Study{
+		Name: name,
+		Groups: []study.Group{
+			{Name: "Control Group", Command: "exit 0"},
+			{Name: "Experiment Group A", Command: "exit 0"},
+			{Name: "Experiment Group B", Command: "exit 0"},
+		},
+	})
 }
 
 func getFilename(args []string) string {
